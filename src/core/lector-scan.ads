@@ -1,14 +1,17 @@
---  Targeted scans over raw JSON text, for the payloads a flattening
---  parser mangles (nested arrays, repeated keys) and for shape checks a
---  parser cannot make (trailing garbage after the document).  Pure string
---  functions: no exceptions, no allocation, results are slices of the
---  input -- proved free of runtime errors, so callers need no defensive
---  wrapping.  Absence is empty, never an error: a missing key, a key not
---  followed by the expected shape, or an unterminated value all read as
---  "".
+--  Targeted scans, redaction and escaping over raw JSON text: reading
+--  scans for the payloads a flattening parser mangles (nested arrays,
+--  repeated keys), shape checks a parser cannot make (trailing garbage
+--  after the document), and the writing-side primitives a JSON log needs
+--  (mask a secret key's values, escape a body into a JSON string).  Pure
+--  string functions: no exceptions, no heap -- proved free of runtime
+--  errors, so callers need no defensive wrapping.  Absence is empty (or
+--  unchanged text), never an error.
 --
 --  The per-key scans require Text'Last < Positive'Last (an index just
---  past the end must exist); every ordinary string satisfies it.
+--  past the end must exist); every ordinary string satisfies it.  The
+--  string-building functions bound their input length (Pre) so the
+--  output-size arithmetic is provable; both bounds are far beyond any
+--  real payload.
 
 package Lector.Scan
   with SPARK_Mode
@@ -90,5 +93,33 @@ is
    --  silently, so callers guarding a file on disk check this BEFORE
    --  parsing: it catches truncated-or-doubled-write corruption.
    function Ends_With_Object_Close (Text : String) return Boolean;
+
+   Redacted : constant String := "***";
+   --  The marker Mask_Values writes over a secret value.
+
+   --  Each JSON value of Key in Text replaced by the redaction marker: a
+   --  quoted value becomes "***", a bare-number value becomes ***, and
+   --  any other shape (null, object, array) is left alone.  Safe on
+   --  absence and idempotent.  Masking is deliberately LOOSER than the
+   --  reading scans: no colon is required after the key (any mix of
+   --  spaces and colons is stepped over) and an unterminated quoted
+   --  value still masks -- when in doubt, mask.  A value holding a quote
+   --  or backslash is scanned to its next '"' like any other, so keys
+   --  whose values may contain them (never account numbers or hashes)
+   --  could under-mask; keep secrets in plain scalar values.
+   function Mask_Values (Text : String; Key : Key_String) return String
+   with
+     Pre  =>
+       Text'Last < Positive'Last and then Text'Length <= Natural'Last / 8,
+     Post => Mask_Values'Result'Length <= 2 * Text'Length + 3;
+
+   --  A JSON string literal's contents: the RFC 8259 escapes for the
+   --  quote, the backslash, and the C0 control characters (the short
+   --  forms \n \r \t \b \f where they exist, \u00xx otherwise), so an
+   --  arbitrary body embeds safely as a JSON string value.
+   function Json_Escape (Text : String) return String
+   with
+     Pre  => Text'Length <= Natural'Last / 8,
+     Post => Json_Escape'Result'Length <= 6 * Text'Length;
 
 end Lector.Scan;
