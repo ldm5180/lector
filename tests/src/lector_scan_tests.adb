@@ -75,6 +75,55 @@ package body Lector_Scan_Tests is
          "an empty match value never matches");
    end Test_Object_Value;
 
+   procedure Test_Json_Escape (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+   begin
+      Assert
+        (Json_Escape ("a""b\c" & ASCII.LF & ASCII.HT & ASCII.NUL)
+         = "a\""b\\c\n\t\u0000",
+         "quote, backslash, short escapes and \u00xx, in place");
+      Assert
+        (Json_Escape (ASCII.CR & ASCII.BS & ASCII.FF & ASCII.ESC)
+         = "\r\b\f\u001b",
+         "the remaining short escapes and a bare C0");
+      Assert (Json_Escape ("plain text") = "plain text", "plain passes");
+      Assert (Json_Escape ("") = "", "empty passes");
+   end Test_Json_Escape;
+
+   procedure Test_Mask_Values (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+   begin
+      Assert
+        (Mask_Values ("{""hashValue"":""AB12"",""id"":7}", "hashValue")
+         = "{""hashValue"":""***"",""id"":7}",
+         "a quoted value masks in place, neighbours untouched");
+      Assert
+        (Mask_Values ("{""orderId"": 100247}", "orderId")
+         = "{""orderId"": ***}",
+         "a bare-number value masks (spaces after the colon tolerated)");
+      Assert
+        (Mask_Values ("{""a"":""x"",""a"":""y""}", "a")
+         = "{""a"":""***"",""a"":""***""}",
+         "every occurrence masks");
+      Assert
+        (Mask_Values ("{""other"":""x""}", "absent") = "{""other"":""x""}",
+         "an absent key changes nothing");
+      Assert
+        (Mask_Values ("{""k"":""unterminated", "k") = "{""k"":""***",
+         "an unterminated value still masks, nothing trails");
+      Assert
+        (Mask_Values ("{""k"":null}", "k") = "{""k"":null}",
+         "a non-scalar value is left alone (and the scan advances)");
+      Assert
+        (Mask_Values ("tail is ""k""", "k") = "tail is ""k""",
+         "a key ending the text copies the remainder unchanged");
+      Assert
+        (Mask_Values (Mask_Values ("{""k"":""s3cr3t""}", "k"), "k")
+         = "{""k"":""***""}",
+         "masking is idempotent");
+      Assert (Mask_Values ("", "k") = "", "empty text passes");
+   end Test_Mask_Values;
+
    procedure Test_Object_Close (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
    begin
@@ -99,6 +148,10 @@ package body Lector_Scan_Tests is
       Register_Routine (T, Test_Object_Value'Access, "flat-object array walk");
       Register_Routine
         (T, Test_Object_Close'Access, "strict document-close check");
+      Register_Routine
+        (T, Test_Json_Escape'Access, "RFC 8259 string escaping");
+      Register_Routine
+        (T, Test_Mask_Values'Access, "secret values mask by key");
    end Register_Tests;
 
    overriding
