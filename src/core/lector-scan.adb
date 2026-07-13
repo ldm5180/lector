@@ -6,6 +6,48 @@ is
    is (C in ' ' | ASCII.HT | ASCII.LF | ASCII.CR)
    with Static;
 
+   --  Walk Text from From while Continue holds, stopping at the first
+   --  character that doesn't (or at Text'Last + 1, off the end) -- the
+   --  shared shape behind every per-key scan's blank/quote/digit run.
+   generic
+      with function Continue (C : Character) return Boolean;
+   function Skip_While (Text : String; From : Positive) return Positive
+   with
+     Pre  =>
+       Text'Last < Positive'Last and then From in Text'First .. Text'Last + 1,
+     Post =>
+       Skip_While'Result in From .. Text'Last + 1
+       and then (Skip_While'Result > Text'Last
+                 or else not Continue (Text (Skip_While'Result)));
+
+   function Skip_While (Text : String; From : Positive) return Positive is
+      I : Positive := From;
+   begin
+      while I <= Text'Last and then Continue (Text (I)) loop
+         pragma Loop_Invariant (I in From .. Text'Last);
+         pragma Loop_Variant (Increases => I);
+         I := I + 1;
+      end loop;
+      return I;
+   end Skip_While;
+
+   function Not_Quote (C : Character) return Boolean
+   is (C /= '"')
+   with Static;
+
+   function Is_Digit (C : Character) return Boolean
+   is (C in '0' .. '9')
+   with Static;
+
+   function Is_Blank_Or_Colon (C : Character) return Boolean
+   is (C in ' ' | ':')
+   with Static;
+
+   function Skip_Blanks is new Skip_While (Continue => Is_Blank);
+   function Skip_To_Quote is new Skip_While (Continue => Not_Quote);
+   function Skip_Digits is new Skip_While (Continue => Is_Digit);
+   function Skip_Separators is new Skip_While (Continue => Is_Blank_Or_Colon);
+
    function Find
      (Text : String; Pattern : String; From : Positive) return Natural is
    begin
@@ -45,22 +87,12 @@ is
          return 0;
       end if;
 
-      I := K + Quoted'Length;  --  just past the key's closing quote
-      while I <= Text'Last and then Is_Blank (Text (I)) loop
-         pragma Loop_Invariant (I in Text'First .. Text'Last);
-         pragma Loop_Variant (Increases => I);
-         I := I + 1;
-      end loop;
+      I := Skip_Blanks (Text, K + Quoted'Length);  --  past the closing quote
       if I > Text'Last or else Text (I) /= ':' then
          return 0;
       end if;
 
-      I := I + 1;
-      while I <= Text'Last and then Is_Blank (Text (I)) loop
-         pragma Loop_Invariant (I in Text'First .. Text'Last);
-         pragma Loop_Variant (Increases => I);
-         I := I + 1;
-      end loop;
+      I := Skip_Blanks (Text, I + 1);
       if I > Text'Last then
          return 0;
       end if;
@@ -77,12 +109,7 @@ is
          return "";
       end if;
 
-      J := I + 1;  --  first byte of the value
-      while J <= Text'Last and then Text (J) /= '"' loop
-         pragma Loop_Invariant (J in Text'First .. Text'Last);
-         pragma Loop_Variant (Increases => J);
-         J := J + 1;
-      end loop;
+      J := Skip_To_Quote (Text, I + 1);  --  first byte of the value
       if J > Text'Last then
          return "";  --  unterminated value
 
@@ -100,12 +127,7 @@ is
          return "";
       end if;
 
-      J := I;
-      while J <= Text'Last and then Text (J) in '0' .. '9' loop
-         pragma Loop_Invariant (J in Text'First .. Text'Last);
-         pragma Loop_Variant (Increases => J);
-         J := J + 1;
-      end loop;
+      J := Skip_Digits (Text, I);
       return Text (I .. J - 1);
    end Number_Value;
 
@@ -230,17 +252,9 @@ is
             --  Step over the key, then any spaces and the colon, to the
             --  value.
             declare
-               V : Positive := Hit + Pattern'Length;
+               V : constant Positive :=
+                 Skip_Separators (Text, Hit + Pattern'Length);
             begin
-               while V <= Text'Last and then Text (V) in ' ' | ':' loop
-                  pragma
-                    Loop_Invariant
-                      (V in Text'First .. Text'Last
-                         and then V >= Hit + Pattern'Length);
-                  pragma Loop_Variant (Increases => V);
-                  V := V + 1;
-               end loop;
-
                if V > Text'Last then
                   Append (Text (I .. Text'Last));
                   exit;
@@ -249,15 +263,8 @@ is
                   --  Quoted value: copy through the opening quote, emit
                   --  the marker, then resume at the closing quote.
                   declare
-                     E : Positive := V + 1;
+                     E : constant Positive := Skip_To_Quote (Text, V + 1);
                   begin
-                     while E <= Text'Last and then Text (E) /= '"' loop
-                        pragma
-                          Loop_Invariant
-                            (E in Text'First .. Text'Last and then E >= V + 1);
-                        pragma Loop_Variant (Increases => E);
-                        E := E + 1;
-                     end loop;
                      Append (Text (I .. V));
                      Append (Redacted);
                      if E <= Text'Last then
@@ -272,15 +279,8 @@ is
                   --  Bare-number value: copy up to it, emit the marker,
                   --  resume after the digit run.
                   declare
-                     E : Positive := V;
+                     E : constant Positive := Skip_Digits (Text, V);
                   begin
-                     while E <= Text'Last and then Text (E) in '0' .. '9' loop
-                        pragma
-                          Loop_Invariant
-                            (E in Text'First .. Text'Last and then E >= V);
-                        pragma Loop_Variant (Increases => E);
-                        E := E + 1;
-                     end loop;
                      Append (Text (I .. V - 1));
                      Append (Redacted);
                      I := E;
