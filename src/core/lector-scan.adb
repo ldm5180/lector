@@ -2,10 +2,9 @@ package body Lector.Scan
   with SPARK_Mode
 is
 
-   Blank : constant String := " " & ASCII.HT & ASCII.LF & ASCII.CR;
-
    function Is_Blank (C : Character) return Boolean
-   is (for some B of Blank => C = B);
+   is (C in ' ' | ASCII.HT | ASCII.LF | ASCII.CR)
+   with Static;
 
    function Find
      (Text : String; Pattern : String; From : Positive) return Natural is
@@ -302,12 +301,22 @@ is
       return Buf (1 .. Last);
    end Mask_Values;
 
-   --  Two lowercase hex digits of a byte value.
-   Hex_Digits : constant String := "0123456789abcdef";
+   --  A single lowercase hex digit 0 .. 15.  Arithmetic, not a table
+   --  lookup: indexed components are not a potentially static expression,
+   --  and this is called from the `with Static` Hex2 below.
+   subtype Hex_Digit is Natural range 0 .. 15;
 
-   function Hex2 (V : Natural) return String
-   is ([Hex_Digits (Hex_Digits'First + (V / 16) mod 16),
-        Hex_Digits (Hex_Digits'First + V mod 16)]);
+   function Hex_Digit_Char (D : Hex_Digit) return Character
+   is (if D < 10
+       then Character'Val (Character'Pos ('0') + D)
+       else Character'Val (Character'Pos ('a') + D - 10))
+   with Static;
+
+   subtype Hex2_Result is String (1 .. 2);
+
+   function Hex2 (V : Natural) return Hex2_Result
+   is (Hex_Digit_Char ((V / 16) mod 16) & Hex_Digit_Char (V mod 16))
+   with Static;
 
    --  One character's spelling inside a JSON string literal: itself, a
    --  short escape, or \u00xx -- never longer than 6 bytes (the bound
