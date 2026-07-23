@@ -1,5 +1,6 @@
 with "aunit";
 with "../lector.gpr";
+with "../lector_utilada.gpr";  --  the suite exercises Lector.Utilada (src/app)
 
 --  The AUnit suite for lector.  Mirrors sml-ada's test crate: the MODE
 --  external selects -O3/-O0 with per-mode object and exec dirs, so the suite

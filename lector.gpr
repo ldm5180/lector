@@ -1,21 +1,18 @@
-with "config/lector_config.gpr";
-with "utilada_sys";
-
---  Lector: narrow JSON reading for consumers of REST payloads.  src/core
---  holds the SPARK-proven targeted scans (pure string functions, zero IO,
---  no dependencies beyond other core units); src/app holds the utilada
---  adapter (a whole-document parse into a flat property view, with
---  Ok : out Boolean instead of exceptions).  proof/proof.gpr sources
---  src/core directly and withs nothing, keeping foreign code out of the
---  proof tree.
+--  Lector core (src/core): the SPARK-proven targeted JSON scans -- pure string
+--  functions, zero IO, and ZERO external dependency.  It is deliberately
+--  CONFIG-FREE: it does NOT with the Alire-generated config/lector_config.gpr,
+--  because that config withs every crate dependency (aunit, utilada) and any
+--  consumer withing lector.gpr would then inherit that foreign code in its
+--  build and PROOF tree -- exactly what proof/proof.gpr avoids by sourcing
+--  src/core directly.  So a consumer that withs lector.gpr gets the proven
+--  core alone.  The utilada adapter (src/app) and the AUnit suite live in
+--  lector_utilada.gpr / tests, which carry those dependencies; with those
+--  projects explicitly to use Lector.Utilada or to run the tests.
 project Lector is
 
    for Library_Name use "Lector";
-   for Library_Version use
-     Project'Library_Name & ".so." & Lector_Config.Crate_Version;
-
-   for Source_Dirs use ("src/core", "src/app", "config");
-   for Object_Dir use "obj/" & Lector_Config.Build_Profile;
+   for Source_Dirs use ("src/core");
+   for Object_Dir use "obj";
    for Create_Missing_Dirs use "True";
    for Library_Dir use "lib";
 
@@ -25,7 +22,9 @@ project Lector is
    for Library_Kind use Library_Type;
 
    package Compiler is
-      for Default_Switches ("Ada") use Lector_Config.Ada_Compiler_Switches;
+      --  Ada 2022 for the core's expression functions / contracts. No profile
+      --  externals here on purpose (see the config-free note above).
+      for Default_Switches ("Ada") use ("-gnat2022");
    end Compiler;
 
    package Binder is

@@ -1,4 +1,5 @@
 with "../lector.gpr";
+with "../lector_utilada.gpr";  --  json_fields demos Lector.Utilada (src/app)
 
 --  Standalone demo main.  Mirrors the test crate: the MODE external
 --  selects -O3/-O0 with per-mode object and exec dirs.  The example is
