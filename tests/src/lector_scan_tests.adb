@@ -137,9 +137,36 @@ package body Lector_Scan_Tests is
       Assert (not Ends_With_Object_Close (""), "empty is not a document");
    end Test_Object_Close;
 
+   --  Several keys masked in ONE pass: whichever key's value comes
+   --  next in the text is masked next, whatever order the list names
+   --  them in, and an empty list leaves the text as it was.
+   procedure Test_Mask_Values_Keys
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Keys : constant Lector.Scan.Key_List :=
+        [Lector.Scan.Key ("a"), Lector.Scan.Key ("b")];
+      None : constant Lector.Scan.Key_List (1 .. 0) := [];
+   begin
+      Assert
+        (Lector.Scan.Mask_Values ("{""a"":""x"",""b"":7,""c"":""y""}", Keys)
+         = "{""a"":""***"",""b"":***,""c"":""y""}",
+         "both keys' values mask, the third stays");
+      Assert
+        (Lector.Scan.Mask_Values ("{""b"":1,""a"":2}", Keys)
+         = "{""b"":***,""a"":***}",
+         "the text's order, not the list's");
+      Assert
+        (Lector.Scan.Mask_Values ("{""a"":""x""}", None) = "{""a"":""x""}",
+         "no keys, nothing masked");
+      Assert (Lector.Scan.Mask_Values ("", Keys) = "", "empty text passes");
+   end Test_Mask_Values_Keys;
+
    overriding
    procedure Register_Tests (T : in out Test) is
    begin
+      Register_Routine
+        (T, Test_Mask_Values_Keys'Access, "several keys mask in one pass");
       Register_Routine (T, Test_String_Value'Access, "string values by key");
       Register_Routine
         (T, Test_From_Offset'Access, "From scans past earlier occurrences");

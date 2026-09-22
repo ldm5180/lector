@@ -113,6 +113,31 @@ is
        Text'Last < Positive'Last and then Text'Length <= Natural'Last / 8,
      Post => Mask_Values'Result'Length <= 2 * Text'Length + 3;
 
+   --  One key of a list: its length and its text, padded, so a list of
+   --  keys is a plain array a caller writes as an aggregate of Key.
+   subtype Key_Length is Natural range 0 .. Max_Key;
+
+   type Key_Name is record
+      Len  : Key_Length := 0;
+      Text : String (1 .. Max_Key) := [others => ' '];
+   end record;
+
+   function Key (S : Key_String) return Key_Name
+   with Post => Key'Result.Len = S'Length;
+
+   type Key_List is array (Positive range <>) of Key_Name;
+
+   --  Every listed key's values masked in ONE pass over Text: whichever
+   --  key's value comes next is masked next, by the single-key rules
+   --  above, under the same bound.  An empty list copies Text.  Seven
+   --  keys over a wire body were seven passes and seven copies; this is
+   --  one of each.
+   function Mask_Values (Text : String; Keys : Key_List) return String
+   with
+     Pre  =>
+       Text'Last < Positive'Last and then Text'Length <= Natural'Last / 8,
+     Post => Mask_Values'Result'Length <= 2 * Text'Length + 3;
+
    --  A JSON string literal's contents: the RFC 8259 escapes for the
    --  quote, the backslash, and the C0 control characters (the short
    --  forms \n \r \t \b \f where they exist, \u00xx otherwise), so an

@@ -200,11 +200,62 @@ is
       return False;
    end Ends_With_Object_Close;
 
-   function Mask_Values (Text : String; Key : Key_String) return String is
-      Pattern : constant String := '"' & Key & '"';
+   function Key (S : Key_String) return Key_Name is
+      K : Key_Name;
+   begin
+      K.Len := S'Length;
+      K.Text (1 .. S'Length) := S;
+      return K;
+   end Key;
 
+   --  The earliest occurrence at or after From of any listed key's
+   --  quoted form, and how long that form is; Hit = 0 when none.
+   procedure Earliest
+     (Text : String;
+      Keys : Key_List;
+      From : Positive;
+      Hit  : out Natural;
+      Len  : out Natural)
+   with
+     Post =>
+       Hit = 0
+       or else (Hit >= From
+                and then Hit >= Text'First
+                and then Len in 3 .. Max_Key + 2
+                and then Text'Last - Hit >= Len - 1)
+   is
+   begin
+      Hit := 0;
+      Len := 0;
+      for K in Keys'Range loop
+         pragma
+           Loop_Invariant
+             (Hit = 0
+                or else (Hit >= From
+                         and then Hit >= Text'First
+                         and then Len in 3 .. Max_Key + 2
+                         and then Text'Last - Hit >= Len - 1));
+         if Keys (K).Len > 0 then
+            declare
+               Pattern : constant String :=
+                 '"' & Keys (K).Text (1 .. Keys (K).Len) & '"';
+               H       : constant Natural := Find (Text, Pattern, From);
+            begin
+               if H > 0 and then (Hit = 0 or else H < Hit) then
+                  Hit := H;
+                  Len := Pattern'Length;
+               end if;
+            end;
+         end if;
+      end loop;
+   end Earliest;
+
+   function Mask_Values (Text : String; Key : Key_String) return String
+   is (Mask_Values (Text, Key_List'[Lector.Scan.Key (Key)]));
+
+   function Mask_Values (Text : String; Keys : Key_List) return String is
       --  Growth argument for the buffer: each hit consumes at least
-      --  Pattern'Length (>= 3) input characters and adds at most 3 bytes
+      --  its quoted key (>= 3) input characters and adds at most 3 bytes
       --  (the marker over an empty value), so the output never exceeds
       --  twice the input; +3 is headroom that keeps the edge proofs
       --  trivial.  Stack, not heap: the hot path allocates nothing.
@@ -242,8 +293,10 @@ is
                 and then Last <= 2 * (I - Text'First));
 
          declare
-            Hit : constant Natural := Find (Text, Pattern, I);
+            Hit : Natural;
+            Len : Natural;
          begin
+            Earliest (Text, Keys, I, Hit, Len);
             if Hit = 0 or else I > Text'Last then
                Append (Text (I .. Text'Last));
                exit;
@@ -252,8 +305,7 @@ is
             --  Step over the key, then any spaces and the colon, to the
             --  value.
             declare
-               V : constant Positive :=
-                 Skip_Separators (Text, Hit + Pattern'Length);
+               V : constant Positive := Skip_Separators (Text, Hit + Len);
             begin
                if V > Text'Last then
                   Append (Text (I .. Text'Last));
