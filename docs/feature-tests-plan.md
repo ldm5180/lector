@@ -199,7 +199,7 @@ which every "is" step checks.
 | `the {word} of the object whose {word} is {word} is read` | `E_Scan_Object` | `Lector.Scan.Object_Value (Doc, Match_Key, Match_Value, Want_Key)` |
 | `the document is parsed` | `E_Parse` | `Lector.Utilada.Parse`; the verdict and the `Document` kept |
 | `the field {word} is read` | `E_Field` | `Lector.Utilada.Value (Doc, Key)`; guard: the document parsed |
-| `the document is checked for a single object` | `E_Check_Shape` | `Lector.Scan.Ends_With_Object_Close` into `Ctx.W.Verdict` |
+| `the document is checked for a single object` | `E_Check_Shape` | `Lector.Scan.Is_Single_Object` into `Ctx.W.Verdict` |
 | `the values of {word} are masked` | `E_Mask_One` | `Lector.Scan.Mask_Values (Doc, Key)` into `Ctx.W.Value` |
 | `the values of these keys are masked:` + one-column table | `E_Mask_Many` | `Mask_Values (Doc, Key_List)`; guard: every key fits `Max_Key` |
 | `the document is escaped for a log` | `E_Escape` | `Lector.Scan.Json_Escape (Doc)` |
@@ -809,3 +809,10 @@ Not itemized; each is a feature of its own when it is wanted.
   function; none is an integration across units.  Nothing removed --
   `make test` reports 12 tests in each mode, as before F0, beside the
   34 scenarios.
+
+- 2026-10-03, after the merge: the gap F6 recorded is closed.
+  `Ends_With_Object_Close` became `Lector.Scan.Is_Single_Object`, which
+  walks the first object to its balancing close (strings and escapes
+  skipped) and refuses anything but blanks after it, so a doubled write
+  is caught; `shape.feature` gained the doubled, leading-bytes and
+  braces-in-a-string scenarios.
