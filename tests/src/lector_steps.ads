@@ -1,5 +1,7 @@
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
+with Lector.Utilada;
+
 with Fabula.Args;
 with Fabula.Check;
 with Fabula.Frames;
@@ -21,19 +23,24 @@ package Lector_Steps is
       E_Scan_String_After,
       E_Scan_Number,
       E_Scan_Object,
+      E_Read_Field,
+      E_Parse,
       E_Check_Value,
+      E_Check_Empty,
       --  An event no pattern names: the named document's read posts it,
       --  and the next row's guard reads whether the file was there.
       E_Document_Settled);
 
    type Hook_Kind is (Fresh_World);
 
-   --  What one scenario holds: the document in hand and the value last
-   --  read out of it.  fabula copies it per step, so it holds values only.
+   --  What one scenario holds: the document in hand, the value last read
+   --  out of it, and its parse with the parse's verdict.  fabula copies it per step, so it holds values only.
    type World is record
       Doc    : Unbounded_String;
       Loaded : Boolean := False;
       Value  : Unbounded_String;
+      Parse  : Lector.Utilada.Document;
+      Parsed : Boolean := False;
    end record;
 
    --  One step as a machine sees it: the scenario, the step's arguments,
@@ -68,9 +75,15 @@ package Lector_Steps is
                                              >= E_Scan_String_After,
       Step ("the number value of {word} is read")
                                              >= E_Scan_Number,
+      Step ("the {word} of the object whose {word} is {string} is read")
+                                             >= E_Scan_Object,
       Step ("the {word} of the object whose {word} is {word} is read")
                                              >= E_Scan_Object,
-      Step ("the value is {string}")         >= E_Check_Value];
+      Step ("the document is parsed")        >= E_Parse,
+      Step ("the field {word} is read")      >= E_Read_Field,
+      Step ("the value is {string}")         >= E_Check_Value,
+      Step ("the value is empty")            >= E_Check_Empty,
+      Step ("the value is absent")           >= E_Check_Empty];
    --!format on
 
    Hook_Defs : constant Steps.Hook_Table := [Before >= Fresh_World];

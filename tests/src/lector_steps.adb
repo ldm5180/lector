@@ -1,5 +1,6 @@
 with Lector_Steps.Holding;
-with Lector_Steps.Scanning;
+with Lector_Steps.Parsing;
+with Lector_Steps.Reading;
 
 package body Lector_Steps is
 
@@ -28,13 +29,15 @@ package body Lector_Steps is
       Phase : Phase_Access;
    end record;
 
-   Holding_Name  : aliased constant String := "holding";
-   Scanning_Name : aliased constant String := "scanning";
+   Holding_Name : aliased constant String := "holding";
+   Reading_Name : aliased constant String := "reading";
+   Parsing_Name : aliased constant String := "parsing";
 
    --!format off
    Regions : constant array (Positive range <>) of Region :=
-     [(Holding_Name'Access, Holding.Offer'Access, Holding.Reset'Access, Holding.Phase'Access),
-      (Scanning_Name'Access, Scanning.Offer'Access, Scanning.Reset'Access, Scanning.Phase'Access)];
+     [(Holding_Name'Access, Holding.Offer'Access,  Holding.Reset'Access,  Holding.Phase'Access),
+      (Reading_Name'Access,  Reading.Offer'Access,  Reading.Reset'Access,  Reading.Phase'Access),
+      (Parsing_Name'Access,  Parsing.Offer'Access,  Parsing.Reset'Access,  Parsing.Phase'Access)];
    --!format on
 
    --  Every region's state, for the step no region would take.
