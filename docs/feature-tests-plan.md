@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F8 landed 2026-10-03; F9-F11 not started.
+**Status:** F0-F9 landed 2026-10-03; F10-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
