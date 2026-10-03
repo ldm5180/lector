@@ -1,0 +1,5 @@
+{"status": "WORKING",
+ "orderId": 100047,
+ "legs": [
+   {"symbol": "SPY", "quantity": "2"},
+   {"symbol": "QQQ", "quantity": "7"}]}
