@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F5 landed 2026-10-03; F6-F11 not started.
+**Status:** F0-F6 landed 2026-10-03; F7-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -789,3 +789,10 @@ Not itemized; each is a feature of its own when it is wanted.
   by a dotted key under any parser, so only an object states the limit.
   Its trailing-garbage scenario also reads the field back (`a` is
   `"1"`), which the unit test does not assert.
+  F6 adds "a file cut short is not a single object" (the truncated
+  write the check exists for) and does not claim a doubled write is
+  caught: `{...}{...}` ends with `}` and passes the check, so that is
+  no promise the crate makes.  A doc string keeps its trailing blank
+  lines (fabula joins them with LF), which is how the blank-lines
+  scenario holds its blanks; a mutant that wants `}` as the very last
+  byte fails exactly that scenario.
