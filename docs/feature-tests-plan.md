@@ -1,5 +1,7 @@
 # Feature tests plan
 
+**Status:** F0 landed 2026-10-03; F1-F11 not started.
+
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
 reader does for the consumer that calls it -- a field is read out of
