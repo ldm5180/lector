@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F9 landed 2026-10-03; F10-F11 not started.
+**Status:** F0-F10 landed 2026-10-03; F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -804,3 +804,8 @@ Not itemized; each is a feature of its own when it is wanted.
   that check is refused ("the text was escaped, not masked").  The
   escape scenario uses a line break, not a tab or a NUL: a control
   character a reader can see in the feature file.
+  F10, judged: every test in both suites calls one function on an
+  inline document and asserts its edges, the complete coverage of that
+  function; none is an integration across units.  Nothing removed --
+  `make test` reports 12 tests in each mode, as before F0, beside the
+  34 scenarios.
