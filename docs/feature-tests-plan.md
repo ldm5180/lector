@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F6 landed 2026-10-03; F7-F11 not started.
+**Status:** F0-F7 landed 2026-10-03; F8-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -796,3 +796,11 @@ Not itemized; each is a feature of its own when it is wanted.
   lines (fabula joins them with LF), which is how the blank-lines
   scenario holds its blanks; a mutant that wants `}` as the very last
   byte fails exactly that scenario.
+  F7's masked or escaped text is its own World field (`Text`), not
+  `Value`: the masking region owns its checks (`the text reads:`, `the
+  text is unchanged`, `masking it again changes nothing`), and the
+  keys it masked by are kept beside the text so the idempotence check
+  masks again by the same list -- one key or a table.  After an escape
+  that check is refused ("the text was escaped, not masked").  The
+  escape scenario uses a line break, not a tab or a NUL: a control
+  character a reader can see in the feature file.
