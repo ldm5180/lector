@@ -1,3 +1,5 @@
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+
 with Fabula.Args;
 with Fabula.Check;
 with Fabula.Frames;
@@ -11,14 +13,24 @@ package Lector_Steps is
 
    --  The steps.  Each is an event of one feature's state machine, in
    --  its own child package.
-   type Step_Kind is (E_Start_Count, E_Read_Fields, E_Check_Read);
+   type Step_Kind is
+     (E_Start_Count,
+      E_Read_Fields,
+      E_Check_Read,
+      E_Hold_Doc,
+      E_Hold_Named,
+      E_Hold_Empty,
+      --  An event no pattern names: the named document's read posts it,
+      --  and the next row's guard reads whether the file was there.
+      E_Document_Settled);
 
    type Hook_Kind is (Fresh_World);
 
-   --  What one scenario holds.  fabula copies it per step, so it holds
-   --  values only.
+   --  What one scenario holds: the document in hand.  fabula copies it per step, so it holds values only.
    type World is record
       Fields : Natural := 0;
+      Doc    : Unbounded_String;
+      Loaded : Boolean := False;
    end record;
 
    --  One step as a machine sees it: the scenario, the step's arguments,
@@ -57,7 +69,10 @@ package Lector_Steps is
    Step_Defs : constant Steps.Step_Table :=
      [Step ("nothing has been read")         >= E_Start_Count,
       Step ("{int} fields are read")         >= E_Read_Fields,
-      Step ("{int} fields have been read")   >= E_Check_Read];
+      Step ("{int} fields have been read")   >= E_Check_Read,
+      Step ("a document:")                   >= E_Hold_Doc,
+      Step ("the document named {word}")     >= E_Hold_Named,
+      Step ("an empty document")             >= E_Hold_Empty];
    --!format on
 
    Hook_Defs : constant Steps.Hook_Table := [Before >= Fresh_World];

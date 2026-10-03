@@ -1,8 +1,7 @@
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-
 with Fabula.Check.Ints;
 with Fabula.Numbers;
 
+with Lector_Steps.Holding;
 with Lector_Steps.Smoke;
 
 package body Lector_Steps is
@@ -51,11 +50,13 @@ package body Lector_Steps is
       Phase : Phase_Access;
    end record;
 
-   Smoke_Name : aliased constant String := "smoke";
+   Holding_Name : aliased constant String := "holding";
+   Smoke_Name   : aliased constant String := "smoke";
 
    --!format off
    Regions : constant array (Positive range <>) of Region :=
-     [(Smoke_Name'Access, Smoke.Offer'Access, Smoke.Reset'Access, Smoke.Phase'Access)];
+     [(Holding_Name'Access, Holding.Offer'Access, Holding.Reset'Access, Holding.Phase'Access),
+      (Smoke_Name'Access,   Smoke.Offer'Access,   Smoke.Reset'Access,   Smoke.Phase'Access)];
    --!format on
 
    --  Every region's state, for the step no region would take.

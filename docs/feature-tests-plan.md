@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F1 landed 2026-10-03; F2-F11 not started.
+**Status:** F0-F2 landed 2026-10-03; F3-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -759,3 +759,10 @@ Not itemized; each is a feature of its own when it is wanted.
   marker.  The smoke machine is a region of its own
   (`Lector_Steps.Smoke`), so the regions table exists from F1 and each
   feature after it adds one row.
+  F2 holds the document in its own region, `Lector_Steps.Holding`
+  (`Blank -> Loading -> Holding`), not in each feature's machine:
+  the features share the hold steps, and a step every region took
+  would run once per region.  The reading regions guard their first
+  step on `Holding.Held` instead, with a refusing fallback row.  The
+  `World` gains each field in the item whose steps first read it, not
+  all of them in F2.
