@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0 landed 2026-10-03; F1-F11 not started.
+**Status:** F0-F1 landed 2026-10-03; F2-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -751,3 +751,11 @@ Not itemized; each is a feature of its own when it is wanted.
   -- each is a behavior the consumer meets, now phrased as what they
   get.  No step was demoted: the step table held no check that reaches
   past a return value.  No anchor moved.
+- **Implementation (2026-10-03):** F1's smoke feature holds the one
+  passing scenario only.  The out-of-order check is run from a scratch
+  directory, where it fails as "E_CHECK_READ is not a step this
+  scenario can take now: smoke=EMPTY"; committed, it would turn `make
+  features` and `alr test` red, since fabula has no expected-failure
+  marker.  The smoke machine is a region of its own
+  (`Lector_Steps.Smoke`), so the regions table exists from F1 and each
+  feature after it adds one row.
