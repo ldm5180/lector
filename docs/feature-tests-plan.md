@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F10 landed 2026-10-03; F11 not started.
+**Status:** implemented 2026-10-03 (F0-F11); the second wave (section 6) is not itemized.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
