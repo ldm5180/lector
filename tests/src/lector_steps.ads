@@ -27,6 +27,10 @@ package Lector_Steps is
       E_Parse,
       E_Check_Value,
       E_Check_Empty,
+      E_Check_Parsed,
+      E_Check_Refused,
+      E_Check_Has,
+      E_Check_Lacks,
       --  An event no pattern names: the named document's read posts it,
       --  and the next row's guard reads whether the file was there.
       E_Document_Settled);
@@ -83,7 +87,11 @@ package Lector_Steps is
       Step ("the field {word} is read")      >= E_Read_Field,
       Step ("the value is {string}")         >= E_Check_Value,
       Step ("the value is empty")            >= E_Check_Empty,
-      Step ("the value is absent")           >= E_Check_Empty];
+      Step ("the value is absent")           >= E_Check_Empty,
+      Step ("the parse succeeds")            >= E_Check_Parsed,
+      Step ("the parse fails")               >= E_Check_Refused,
+      Step ("the field {word} is present")   >= E_Check_Has,
+      Step ("the field {word} is absent")    >= E_Check_Lacks];
    --!format on
 
    Hook_Defs : constant Steps.Hook_Table := [Before >= Fresh_World];
