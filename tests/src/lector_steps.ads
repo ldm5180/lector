@@ -31,6 +31,9 @@ package Lector_Steps is
       E_Check_Refused,
       E_Check_Has,
       E_Check_Lacks,
+      E_Check_Shape,
+      E_Check_Shape_Ok,
+      E_Check_Shape_Bad,
       --  An event no pattern names: the named document's read posts it,
       --  and the next row's guard reads whether the file was there.
       E_Document_Settled);
@@ -38,13 +41,15 @@ package Lector_Steps is
    type Hook_Kind is (Fresh_World);
 
    --  What one scenario holds: the document in hand, the value last read
-   --  out of it, and its parse with the parse's verdict.  fabula copies it per step, so it holds values only.
+   --  out of it, its parse with the parse's verdict, and whether it is
+   --  one complete object.  fabula copies it per step, so it holds values only.
    type World is record
-      Doc    : Unbounded_String;
-      Loaded : Boolean := False;
-      Value  : Unbounded_String;
-      Parse  : Lector.Utilada.Document;
-      Parsed : Boolean := False;
+      Doc     : Unbounded_String;
+      Loaded  : Boolean := False;
+      Value   : Unbounded_String;
+      Parse   : Lector.Utilada.Document;
+      Parsed  : Boolean := False;
+      Verdict : Boolean := False;
    end record;
 
    --  One step as a machine sees it: the scenario, the step's arguments,
@@ -91,7 +96,13 @@ package Lector_Steps is
       Step ("the parse succeeds")            >= E_Check_Parsed,
       Step ("the parse fails")               >= E_Check_Refused,
       Step ("the field {word} is present")   >= E_Check_Has,
-      Step ("the field {word} is absent")    >= E_Check_Lacks];
+      Step ("the field {word} is absent")    >= E_Check_Lacks,
+      Step ("the document is checked for a single object")
+                                             >= E_Check_Shape,
+      Step ("the document is a single object")
+                                             >= E_Check_Shape_Ok,
+      Step ("the document is not a single object")
+                                             >= E_Check_Shape_Bad];
    --!format on
 
    Hook_Defs : constant Steps.Hook_Table := [Before >= Fresh_World];
