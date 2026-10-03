@@ -190,15 +190,88 @@ is
       end;
    end Object_Value;
 
-   function Ends_With_Object_Close (Text : String) return Boolean is
+   --  Where a walk over an object stands: how many brackets are open,
+   --  and whether it is inside a string, just past its backslash.
+   type Walk is record
+      Depth     : Natural := 0;
+      In_String : Boolean := False;
+      Escaped   : Boolean := False;
+   end record;
+
+   --  The walk advanced over one character of string content.
+   procedure Step_In_String (W : in out Walk; C : Character)
+   with Pre => W.In_String, Post => W.Depth = W.Depth'Old
+   is
    begin
-      for I in reverse Text'Range loop
+      if W.Escaped then
+         W.Escaped := False;
+      elsif C = '\' then
+         W.Escaped := True;
+      elsif C = '"' then
+         W.In_String := False;
+      end if;
+   end Step_In_String;
+
+   --  The walk advanced over one character, opening or closing a level
+   --  on a bracket outside a string.
+   procedure Step (W : in out Walk; C : Character)
+   with Pre => W.Depth < Natural'Last, Post => W.Depth <= W.Depth'Old + 1
+   is
+   begin
+      if W.In_String then
+         Step_In_String (W, C);
+         return;
+      end if;
+      case C is
+         when '"'       =>
+            W.In_String := True;
+
+         when '{' | '[' =>
+            W.Depth := W.Depth + 1;
+
+         when '}' | ']' =>
+            W.Depth := (if W.Depth > 0 then W.Depth - 1 else 0);
+
+         when others    =>
+            null;
+      end case;
+   end Step;
+
+   --  Position of the first non-blank character of Text; 0 when none.
+   function First_Non_Blank (Text : String) return Natural
+   with
+     Post =>
+       First_Non_Blank'Result = 0 or else First_Non_Blank'Result in Text'Range
+   is
+   begin
+      for I in Text'Range loop
          if not Is_Blank (Text (I)) then
-            return Text (I) = '}';
+            return I;
+         end if;
+      end loop;
+      return 0;
+   end First_Non_Blank;
+
+   --  True when Text holds only blanks after position Last.
+   function Blank_After (Text : String; Last : Positive) return Boolean
+   is (for all J in Text'Range => J <= Last or else Is_Blank (Text (J)));
+
+   function Is_Single_Object (Text : String) return Boolean is
+      Start : constant Natural := First_Non_Blank (Text);
+      W     : Walk;
+   begin
+      if Start = 0 or else Text (Start) /= '{' then
+         return False;
+      end if;
+      for I in Start .. Text'Last loop
+         pragma Loop_Invariant (W.Depth <= I - Start);
+         Step (W, Text (I));
+         if W.Depth = 0 then
+            return Text (I) = '}' and then Blank_After (Text, I);
          end if;
       end loop;
       return False;
-   end Ends_With_Object_Close;
+   end Is_Single_Object;
 
    function Key (S : Key_String) return Key_Name is
       K : Key_Name;

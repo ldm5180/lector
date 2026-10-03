@@ -9,7 +9,7 @@ private with Util.Properties;
 --
 --  Note what Parse does NOT check: utilada's reader stops at the first
 --  complete value, so "{...}trailing" parses.  Callers guarding a file on
---  disk check Lector.Scan.Ends_With_Object_Close first.
+--  disk check Lector.Scan.Is_Single_Object first.
 
 package Lector.Utilada is
 

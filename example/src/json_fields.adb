@@ -59,8 +59,8 @@ begin
       Lector.Scan.Object_Value (Sample, "symbol", "QQQ", "quantity"),
       "7");
    Show
-     ("Scan document closes cleanly ",
-      (if Lector.Scan.Ends_With_Object_Close (Sample) then "yes" else "no"),
+     ("Scan document is one object ",
+      (if Lector.Scan.Is_Single_Object (Sample) then "yes" else "no"),
       "yes");
 
    if Failed then

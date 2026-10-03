@@ -117,7 +117,7 @@ for absent) rather than raising.
   `Parse`'s `Ok` to False.
 - `Lector.Scan` functions never raise and never read outside `Text`'s
   bounds — that is what the proof carries; keep it green.
-- `Ends_With_Object_Close` is the strict single-document rule (last
-  non-blank byte is `}`): parsers that stop at the first complete value
-  would silently accept `{...}trailing`, so callers guarding files on disk
-  check it BEFORE parsing.
+- `Is_Single_Object` is the strict single-document rule (one object,
+  its balancing `}` followed only by blanks): parsers that stop at the
+  first complete value would silently accept `{...}trailing` and
+  `{...}{...}`, so callers guarding files on disk check it BEFORE parsing.

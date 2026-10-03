@@ -65,7 +65,7 @@ package body Lector_Utilada_Tests is
    begin
       --  The reader stops at the first complete value, so trailing
       --  garbage parses -- pinned here because it is exactly why
-      --  Lector.Scan.Ends_With_Object_Close exists for callers guarding
+      --  Lector.Scan.Is_Single_Object exists for callers guarding
       --  files on disk.
       Lector.Utilada.Parse ("{""a"": ""1""}trailing", Doc, Ok);
       Assert (Ok, "the reader accepts trailing garbage (documented)");

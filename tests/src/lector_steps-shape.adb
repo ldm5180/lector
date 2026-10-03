@@ -42,7 +42,7 @@ package body Lector_Steps.Shape is
 
          when A_Check_Shape    =>
             Ctx.W.Verdict :=
-              Lector.Scan.Ends_With_Object_Close (To_String (Ctx.W.Doc));
+              Lector.Scan.Is_Single_Object (To_String (Ctx.W.Doc));
 
          when A_Expect_Verdict =>
             Fabula.Check.Is_True
