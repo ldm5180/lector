@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F3 landed 2026-10-03; F4-F11 not started.
+**Status:** F0-F4 landed 2026-10-03; F5-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -773,3 +773,14 @@ Not itemized; each is a feature of its own when it is wanted.
   `AAA`) to the matching-object scenario, the unit test's other
   assertion, and the scans refuse a key past `Max_Key` and an "after
   the first" key the document lacks, each naming it.
+  F4 needs the parse and a field read for its last scenario, so the
+  parse arrives here as its own region (`Lector_Steps.Parsing`,
+  `Unparsed -> Parsed`) and F5 adds only its checks.  Every read that
+  gives a value -- the four scans and the field read -- is one region,
+  `Lector_Steps.Reading` (F3's `Scanning`, renamed), which owns the
+  value checks: two regions each taking `the value is` would check it
+  twice.  A field read is guarded on `Parsing.Done`, whatever the
+  verdict, so "a failed parse reads empty" stays a row (3.1).  An
+  empty match value is a quoted capture, `whose accountNumber is ""`,
+  matched by a pattern placed before the `{word}` one (fabula takes
+  the first matching row of the step table).

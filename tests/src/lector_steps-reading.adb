@@ -1,17 +1,19 @@
 with Lector.Scan;
+with Lector.Utilada;
 
 with Lector_World;
 
 with Lector_Steps.Flows;
 with Lector_Steps.Holding;
+with Lector_Steps.Parsing;
 
-package body Lector_Steps.Scanning is
+package body Lector_Steps.Reading is
 
-   --  Idle until a scan reads a value; the checks read it then, and
-   --  another scan may read the same document again.
+   --  Idle until a read gives a value; the checks read it then, and
+   --  another read may read the same document again.
    type State is (Idle, Read);
 
-   type Guard_Kind is (Always, Held, Fits, Found);
+   type Guard_Kind is (Always, Held, Fits, Found, Parse_Made);
 
    type Action_Kind is
      (A_Nothing,
@@ -19,9 +21,14 @@ package body Lector_Steps.Scanning is
       A_Scan_String_After,
       A_Scan_Number,
       A_Scan_Object,
+      A_Read_Field,
       A_Refuse_Key,
       A_Refuse_First,
-      A_Check_Value);
+      A_Check_Value,
+      A_Check_Empty);
+
+   --  The actions that read a value out of the document in hand.
+   subtype Read_Action is Action_Kind range A_Scan_String .. A_Read_Field;
 
    --  The captures: the key a scan reads, then the key it starts after
    --  or the key an object is matched on, then the value matched.
@@ -65,19 +72,15 @@ package body Lector_Steps.Scanning is
    begin
       return
         (case G is
-           when Always => True,
-           when Held   => Holding.Held,
-           when Fits   => Holding.Held and then Long_Key (Ctx, Evt) = 0,
-           when Found  =>
+           when Always     => True,
+           when Held       => Holding.Held,
+           when Fits       => Holding.Held and then Long_Key (Ctx, Evt) = 0,
+           when Found      =>
              Holding.Held
              and then Long_Key (Ctx, Evt) = 0
-             and then First_At (Ctx) > 0);
+             and then First_At (Ctx) > 0,
+           when Parse_Made => Parsing.Done);
    end Evaluate;
-
-   procedure Keep (Ctx : in out Step_Context; Value : String) is
-   begin
-      Ctx.W.Value := To_Unbounded_String (Value);
-   end Keep;
 
    function String_After (Ctx : Step_Context) return String
    is (Lector.Scan.String_Value
@@ -90,52 +93,56 @@ package body Lector_Steps.Scanning is
           Match_Value => Capture (Ctx, Match),
           Want_Key    => Capture (Ctx, Read_Key)));
 
+   --  What a read gives: the value it reads out of the document.
+   function Value_Of (A : Read_Action; Ctx : Step_Context) return String
+   is (case A is
+         when A_Scan_String       =>
+           Lector.Scan.String_Value (Doc (Ctx), Capture (Ctx, Read_Key), 1),
+         when A_Scan_String_After => String_After (Ctx),
+         when A_Scan_Number       =>
+           Lector.Scan.Number_Value (Doc (Ctx), Capture (Ctx, Read_Key), 1),
+         when A_Scan_Object       => Object_Field (Ctx),
+         when A_Read_Field        =>
+           Lector.Utilada.Value (Ctx.W.Parse, Capture (Ctx, Read_Key)));
+
+   function Too_Long (Ctx : Step_Context; Evt : Step_Kind) return String
+   is ("a key is at most"
+       & Lector.Scan.Max_Key'Image
+       & " characters: "
+       & Capture (Ctx, Long_Key (Ctx, Evt)));
+
+   function No_First (Ctx : Step_Context) return String
+   is ("the document holds no "
+       & Lector_World.Quoted (Capture (Ctx, Second_Key))
+       & " to start after");
+
+   procedure Check_Value_Is (Ctx : in out Step_Context; Want : String) is
+   begin
+      Fabula.Check.Text_Equal
+        (Ctx.R, To_String (Ctx.W.Value), Want, "the value read");
+   end Check_Value_Is;
+
    procedure Execute
      (A : Action_Kind; Ctx : in out Step_Context; Evt : Step_Kind) is
    begin
       case A is
-         when A_Nothing           =>
+         when A_Nothing      =>
             null;
 
-         when A_Scan_String       =>
-            Keep
-              (Ctx,
-               Lector.Scan.String_Value
-                 (Doc (Ctx), Capture (Ctx, Read_Key), 1));
+         when Read_Action    =>
+            Ctx.W.Value := To_Unbounded_String (Value_Of (A, Ctx));
 
-         when A_Scan_String_After =>
-            Keep (Ctx, String_After (Ctx));
+         when A_Refuse_Key   =>
+            Fabula.Check.Fail_Step (Ctx.R, Too_Long (Ctx, Evt));
 
-         when A_Scan_Number       =>
-            Keep
-              (Ctx,
-               Lector.Scan.Number_Value
-                 (Doc (Ctx), Capture (Ctx, Read_Key), 1));
+         when A_Refuse_First =>
+            Fabula.Check.Fail_Step (Ctx.R, No_First (Ctx));
 
-         when A_Scan_Object       =>
-            Keep (Ctx, Object_Field (Ctx));
+         when A_Check_Value  =>
+            Check_Value_Is (Ctx, Fabula.Args.Text (Ctx.A, Read_Key));
 
-         when A_Refuse_Key        =>
-            Fabula.Check.Fail_Step
-              (Ctx.R,
-               "a key is at most"
-               & Lector.Scan.Max_Key'Image
-               & " characters: "
-               & Capture (Ctx, Long_Key (Ctx, Evt)));
-
-         when A_Refuse_First      =>
-            Fabula.Check.Fail_Step
-              (Ctx.R,
-               "the document holds no "
-               & Lector_World.Quoted (Capture (Ctx, Second_Key))
-               & " to start after");
-
-         when A_Check_Value       =>
-            Fabula.Check.Text_Equal
-              (Ctx.R,
-               To_String (Ctx.W.Value),
-               Fabula.Args.Text (Ctx.A, Read_Key),
-               "the value read");
+         when A_Check_Empty  =>
+            Check_Value_Is (Ctx, "");
       end case;
    end Execute;
 
@@ -156,7 +163,9 @@ package body Lector_Steps.Scanning is
    Scan_String_After : constant Ev := (Kind => E_Scan_String_After);
    Scan_Number       : constant Ev := (Kind => E_Scan_Number);
    Scan_Object       : constant Ev := (Kind => E_Scan_Object);
+   Read_Field        : constant Ev := (Kind => E_Read_Field);
    Check_Value       : constant Ev := (Kind => E_Check_Value);
+   Check_Empty       : constant Ev := (Kind => E_Check_Empty);
 
    --!format off
    Table : constant Transition_Table :=
@@ -169,6 +178,7 @@ package body Lector_Steps.Scanning is
       Idle + Scan_Number       (Held)  / A_Refuse_Key        >= Idle,
       Idle + Scan_Object       (Fits)  / A_Scan_Object       >= Read,
       Idle + Scan_Object       (Held)  / A_Refuse_Key        >= Idle,
+      Idle + Read_Field  (Parse_Made)  / A_Read_Field        >= Read,
       Read + Scan_String       (Fits)  / A_Scan_String       >= Read,
       Read + Scan_String       (Held)  / A_Refuse_Key        >= Read,
       Read + Scan_String_After (Found) / A_Scan_String_After >= Read,
@@ -178,7 +188,9 @@ package body Lector_Steps.Scanning is
       Read + Scan_Number       (Held)  / A_Refuse_Key        >= Read,
       Read + Scan_Object       (Fits)  / A_Scan_Object       >= Read,
       Read + Scan_Object       (Held)  / A_Refuse_Key        >= Read,
-      Read + Check_Value               / A_Check_Value       >= Read];
+      Read + Read_Field  (Parse_Made)  / A_Read_Field        >= Read,
+      Read + Check_Value               / A_Check_Value       >= Read,
+      Read + Check_Empty               / A_Check_Empty       >= Read];
    --!format on
 
    Current : State := Idle;
@@ -197,4 +209,4 @@ package body Lector_Steps.Scanning is
    function Phase return String
    is (Current'Image);
 
-end Lector_Steps.Scanning;
+end Lector_Steps.Reading;
