@@ -124,18 +124,38 @@ package body Lector_Scan_Tests is
       Assert (Mask_Values ("", "k") = "", "empty text passes");
    end Test_Mask_Values;
 
-   procedure Test_Object_Close (T : in out AUnit.Test_Cases.Test_Case'Class) is
+   procedure Test_Single_Object (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
       pragma Unreferenced (T);
    begin
-      Assert (Ends_With_Object_Close ("{""a"":1}"), "plain object");
+      Assert (Is_Single_Object ("{""a"":1}"), "plain object");
       Assert
-        (Ends_With_Object_Close ("{""a"":1}" & ASCII.LF & "  "),
-         "trailing blanks are fine");
+        (Is_Single_Object (" " & ASCII.LF & "{""a"":1}" & ASCII.LF & "  "),
+         "blanks around the object are fine");
       Assert
-        (not Ends_With_Object_Close ("{""a"":1}garbage"),
+        (Is_Single_Object ("{""a"":{""b"":[1,{}]}}"),
+         "nested objects and arrays close in turn");
+      Assert
+        (Is_Single_Object ("{""a"":""}{"",""b"":""\""}""}"),
+         "brackets and escaped quotes inside strings are text");
+      Assert
+        (not Is_Single_Object ("{""a"":1}garbage"),
          "trailing garbage is corruption");
-      Assert (not Ends_With_Object_Close (""), "empty is not a document");
-   end Test_Object_Close;
+      Assert
+        (not Is_Single_Object ("{""a"":1}{""a"":2}"),
+         "a doubled write is corruption");
+      Assert (not Is_Single_Object ("{""a"":1, ""b"), "a file cut short");
+      Assert
+        (not Is_Single_Object ("{""a"":""}"), "cut short inside a string");
+      Assert (not Is_Single_Object ("x{""a"":1}"), "leading garbage");
+      Assert (not Is_Single_Object ("[1]"), "an array is not an object");
+      Assert
+        (not Is_Single_Object ("[1}"),
+         "an object close does not end an array opened first");
+      Assert (not Is_Single_Object ("{""a"":1]"), "an array close is not");
+      Assert (not Is_Single_Object (""), "empty is not a document");
+      Assert (not Is_Single_Object ("  "), "blanks are not a document");
+   end Test_Single_Object;
 
    --  Several keys masked in ONE pass: whichever key's value comes
    --  next in the text is masked next, whatever order the list names
@@ -174,7 +194,7 @@ package body Lector_Scan_Tests is
         (T, Test_Number_Value'Access, "digit runs by key, verbatim");
       Register_Routine (T, Test_Object_Value'Access, "flat-object array walk");
       Register_Routine
-        (T, Test_Object_Close'Access, "strict document-close check");
+        (T, Test_Single_Object'Access, "strict single-object check");
       Register_Routine
         (T, Test_Json_Escape'Access, "RFC 8259 string escaping");
       Register_Routine

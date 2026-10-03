@@ -88,11 +88,14 @@ is
      Pre  => Text'Last < Positive'Last,
      Post => Object_Value'Result'Length <= Text'Length;
 
-   --  True when the last non-blank byte is the object close '}'.  Parsers
-   --  that stop at the first complete value accept "{...}trailing"
+   --  True when Text is one JSON object and nothing else but blanks: it
+   --  opens with '{', and the '}' that balances it -- brackets inside
+   --  strings skipped -- is followed only by blanks.  Parsers that stop
+   --  at the first complete value accept "{...}trailing" and "{...}{...}"
    --  silently, so callers guarding a file on disk check this BEFORE
-   --  parsing: it catches truncated-or-doubled-write corruption.
-   function Ends_With_Object_Close (Text : String) return Boolean;
+   --  parsing: it catches a truncated, doubled or trailing-garbage write.
+   --  Nesting is counted, not validated; the parse that follows does that.
+   function Is_Single_Object (Text : String) return Boolean;
 
    Redacted : constant String := "***";
    --  The marker Mask_Values writes over a secret value.
