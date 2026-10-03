@@ -1,5 +1,6 @@
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
+with Lector.Scan;
 with Lector.Utilada;
 
 with Fabula.Args;
@@ -34,15 +35,27 @@ package Lector_Steps is
       E_Check_Shape,
       E_Check_Shape_Ok,
       E_Check_Shape_Bad,
+      E_Mask_One,
+      E_Mask_Many,
+      E_Escape,
+      E_Check_Text,
+      E_Check_Unchanged,
+      E_Check_Idempotent,
       --  An event no pattern names: the named document's read posts it,
       --  and the next row's guard reads whether the file was there.
       E_Document_Settled);
 
    type Hook_Kind is (Fresh_World);
 
+   --  Most keys one masking step names: past any list a log masks.
+   Max_Mask_Keys : constant := 16;
+
+   subtype Mask_Count is Natural range 0 .. Max_Mask_Keys;
+
    --  What one scenario holds: the document in hand, the value last read
-   --  out of it, its parse with the parse's verdict, and whether it is
-   --  one complete object.  fabula copies it per step, so it holds values only.
+   --  out of it, its parse with the parse's verdict, whether it is one
+   --  complete object, and the text masked or escaped for a log with the
+   --  keys it was masked by.  fabula copies it per step, so it holds values only.
    type World is record
       Doc     : Unbounded_String;
       Loaded  : Boolean := False;
@@ -50,6 +63,9 @@ package Lector_Steps is
       Parse   : Lector.Utilada.Document;
       Parsed  : Boolean := False;
       Verdict : Boolean := False;
+      Text    : Unbounded_String;
+      Keys    : Lector.Scan.Key_List (1 .. Max_Mask_Keys);
+      Masked  : Mask_Count := 0;
    end record;
 
    --  One step as a machine sees it: the scenario, the step's arguments,
@@ -102,7 +118,17 @@ package Lector_Steps is
       Step ("the document is a single object")
                                              >= E_Check_Shape_Ok,
       Step ("the document is not a single object")
-                                             >= E_Check_Shape_Bad];
+                                             >= E_Check_Shape_Bad,
+      Step ("the values of these keys are masked:")
+                                             >= E_Mask_Many,
+      Step ("the values of {word} are masked")
+                                             >= E_Mask_One,
+      Step ("the document is escaped for a log")
+                                             >= E_Escape,
+      Step ("the text reads:")               >= E_Check_Text,
+      Step ("the text is unchanged")         >= E_Check_Unchanged,
+      Step ("masking it again changes nothing")
+                                             >= E_Check_Idempotent];
    --!format on
 
    Hook_Defs : constant Steps.Hook_Table := [Before >= Fresh_World];

@@ -1,4 +1,5 @@
 with Lector_Steps.Holding;
+with Lector_Steps.Masking;
 with Lector_Steps.Parsing;
 with Lector_Steps.Reading;
 with Lector_Steps.Shape;
@@ -34,13 +35,15 @@ package body Lector_Steps is
    Reading_Name : aliased constant String := "reading";
    Parsing_Name : aliased constant String := "parsing";
    Shape_Name   : aliased constant String := "shape";
+   Masking_Name : aliased constant String := "masking";
 
    --!format off
    Regions : constant array (Positive range <>) of Region :=
      [(Holding_Name'Access, Holding.Offer'Access, Holding.Reset'Access, Holding.Phase'Access),
       (Reading_Name'Access, Reading.Offer'Access, Reading.Reset'Access, Reading.Phase'Access),
       (Parsing_Name'Access, Parsing.Offer'Access, Parsing.Reset'Access, Parsing.Phase'Access),
-      (Shape_Name'Access,   Shape.Offer'Access,   Shape.Reset'Access,   Shape.Phase'Access)];
+      (Shape_Name'Access,   Shape.Offer'Access,   Shape.Reset'Access,   Shape.Phase'Access),
+      (Masking_Name'Access, Masking.Offer'Access, Masking.Reset'Access, Masking.Phase'Access)];
    --!format on
 
    --  Every region's state, for the step no region would take.
