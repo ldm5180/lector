@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F4 landed 2026-10-03; F5-F11 not started.
+**Status:** F0-F5 landed 2026-10-03; F6-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -784,3 +784,8 @@ Not itemized; each is a feature of its own when it is wanted.
   empty match value is a quoted capture, `whose accountNumber is ""`,
   matched by a pattern placed before the `{word}` one (fabula takes
   the first matching row of the step table).
+  F5's limit scenario uses a nested OBJECT (`{"child": {"status":
+  ...}}`), not the array of the unit test: an array would never read
+  by a dotted key under any parser, so only an object states the limit.
+  Its trailing-garbage scenario also reads the field back (`a` is
+  `"1"`), which the unit test does not assert.
