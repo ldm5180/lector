@@ -14,6 +14,16 @@ project-files = ["lector.gpr"]
 [[depends-on]]
 utilada = "^2.9.0"
 aunit = "^26.0.0"
+fabula = "*"
+
+#  fabula, the Gherkin runner the features under tests/features/ run on,
+#  is a TEST dependency and not in the community index; pin it to an
+#  exact commit so a build is reproducible from this file alone.  Its own
+#  pin brings sml 3ccd0e4 into this crate's closure: lector pins no sml
+#  itself, so there is no chain to align here, and a consumer that pins
+#  sml (fructus, arb-ada) already pins that same commit.
+[[pins]]
+fabula = { url = "https://github.com/ldm5180/fabula.git", commit = "746a234df5581c2e38c4202aeee8b07473fb6a51" }
 
 [build-switches]
 "*".ada_version = "Ada2022"
