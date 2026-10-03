@@ -1,6 +1,6 @@
 # Feature tests plan
 
-**Status:** F0-F2 landed 2026-10-03; F3-F11 not started.
+**Status:** F0-F3 landed 2026-10-03; F4-F11 not started.
 
 The crate's behavior, stated in Gherkin and run against the real
 reader.  `*.feature` files under `tests/features/` say what a JSON
@@ -766,3 +766,10 @@ Not itemized; each is a feature of its own when it is wanted.
   step on `Holding.Held` instead, with a refusing fallback row.  The
   `World` gains each field in the item whose steps first read it, not
   all of them in F2.
+  F3's scanning machine replaces the smoke one: it is the runner's
+  proof from then on, so `smoke.feature`, `Lector_Steps.Smoke` and the
+  counting helpers go in the same commit, as nuntius's first feature
+  replaced its smoke.  F3 adds a second `hashValue` read (`111` ->
+  `AAA`) to the matching-object scenario, the unit test's other
+  assertion, and the scans refuse a key past `Max_Key` and an "after
+  the first" key the document lacks, each naming it.

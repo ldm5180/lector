@@ -14,23 +14,26 @@ package Lector_Steps is
    --  The steps.  Each is an event of one feature's state machine, in
    --  its own child package.
    type Step_Kind is
-     (E_Start_Count,
-      E_Read_Fields,
-      E_Check_Read,
-      E_Hold_Doc,
+     (E_Hold_Doc,
       E_Hold_Named,
       E_Hold_Empty,
+      E_Scan_String,
+      E_Scan_String_After,
+      E_Scan_Number,
+      E_Scan_Object,
+      E_Check_Value,
       --  An event no pattern names: the named document's read posts it,
       --  and the next row's guard reads whether the file was there.
       E_Document_Settled);
 
    type Hook_Kind is (Fresh_World);
 
-   --  What one scenario holds: the document in hand.  fabula copies it per step, so it holds values only.
+   --  What one scenario holds: the document in hand and the value last
+   --  read out of it.  fabula copies it per step, so it holds values only.
    type World is record
-      Fields : Natural := 0;
       Doc    : Unbounded_String;
       Loaded : Boolean := False;
+      Value  : Unbounded_String;
    end record;
 
    --  One step as a machine sees it: the scenario, the step's arguments,
@@ -47,17 +50,6 @@ package Lector_Steps is
 
    procedure Then_Take (Ctx : in out Step_Context; Evt : Step_Kind);
 
-   --  Whether capture N reads as a whole number of zero or more: the
-   --  guard every counting step's rows share.
-   function Count_Read (Ctx : Step_Context; N : Positive := 1) return Boolean;
-
-   --  Capture N, which Count_Read said reads.
-   function Count (Ctx : Step_Context; N : Positive := 1) return Natural
-   with Pre => Count_Read (Ctx, N);
-
-   --  Fail the step for capture N: why it does not read as a count.
-   procedure Refuse_Count (Ctx : in out Step_Context; N : Positive := 1);
-
    package Steps is new
      Fabula.Registry
        (Step_Kind => Step_Kind,
@@ -67,12 +59,18 @@ package Lector_Steps is
 
    --!format off
    Step_Defs : constant Steps.Step_Table :=
-     [Step ("nothing has been read")         >= E_Start_Count,
-      Step ("{int} fields are read")         >= E_Read_Fields,
-      Step ("{int} fields have been read")   >= E_Check_Read,
-      Step ("a document:")                   >= E_Hold_Doc,
+     [Step ("a document:")                   >= E_Hold_Doc,
       Step ("the document named {word}")     >= E_Hold_Named,
-      Step ("an empty document")             >= E_Hold_Empty];
+      Step ("an empty document")             >= E_Hold_Empty,
+      Step ("the string value of {word} is read")
+                                             >= E_Scan_String,
+      Step ("the string value of {word} after the first {word} is read")
+                                             >= E_Scan_String_After,
+      Step ("the number value of {word} is read")
+                                             >= E_Scan_Number,
+      Step ("the {word} of the object whose {word} is {word} is read")
+                                             >= E_Scan_Object,
+      Step ("the value is {string}")         >= E_Check_Value];
    --!format on
 
    Hook_Defs : constant Steps.Hook_Table := [Before >= Fresh_World];

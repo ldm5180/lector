@@ -1,8 +1,5 @@
-with Fabula.Check.Ints;
-with Fabula.Numbers;
-
 with Lector_Steps.Holding;
-with Lector_Steps.Smoke;
+with Lector_Steps.Scanning;
 
 package body Lector_Steps is
 
@@ -11,25 +8,6 @@ package body Lector_Steps is
       Ctx.Has_Next := True;
       Ctx.Next := Evt;
    end Then_Take;
-
-   function Count_Read (Ctx : Step_Context; N : Positive := 1) return Boolean
-   is (N <= Fabula.Args.Count (Ctx.A)
-       and then Fabula.Args.Int (Ctx.A, N).Ok
-       and then Fabula.Args.Int (Ctx.A, N).Value >= 0);
-
-   function Count (Ctx : Step_Context; N : Positive := 1) return Natural
-   is (Fabula.Args.Int (Ctx.A, N).Value);
-
-   procedure Refuse_Count (Ctx : in out Step_Context; N : Positive := 1) is
-      Read : constant Fabula.Numbers.Integer_Reads.Read :=
-        Fabula.Args.Int (Ctx.A, N);
-   begin
-      if Read.Ok then
-         Fabula.Check.Fail_Step (Ctx.R, "a count cannot be negative");
-      else
-         Fabula.Check.Ints.Fail_Read (Ctx.R, Read.Error);
-      end if;
-   end Refuse_Count;
 
    ---------------------------------------------------------------------
    --  The features as orthogonal regions: every step is offered to each,
@@ -50,13 +28,13 @@ package body Lector_Steps is
       Phase : Phase_Access;
    end record;
 
-   Holding_Name : aliased constant String := "holding";
-   Smoke_Name   : aliased constant String := "smoke";
+   Holding_Name  : aliased constant String := "holding";
+   Scanning_Name : aliased constant String := "scanning";
 
    --!format off
    Regions : constant array (Positive range <>) of Region :=
      [(Holding_Name'Access, Holding.Offer'Access, Holding.Reset'Access, Holding.Phase'Access),
-      (Smoke_Name'Access,   Smoke.Offer'Access,   Smoke.Reset'Access,   Smoke.Phase'Access)];
+      (Scanning_Name'Access, Scanning.Offer'Access, Scanning.Reset'Access, Scanning.Phase'Access)];
    --!format on
 
    --  Every region's state, for the step no region would take.
